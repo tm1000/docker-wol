@@ -169,6 +169,45 @@ describe('Wake API Integration Tests', () => {
         const body = JSON.parse(response.body);
         expect(body.status).toBe('success');
       });
+
+      it('should accept custom interval', async () => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/wake',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': testApiKey,
+          },
+          payload: {
+            mac: 'AA:BB:CC:DD:EE:FF',
+            interval: 200,
+          },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = JSON.parse(response.body);
+        expect(body.status).toBe('success');
+      });
+
+      it('should accept num_packets and interval together', async () => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/wake',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': testApiKey,
+          },
+          payload: {
+            mac: 'AA:BB:CC:DD:EE:FF',
+            num_packets: 5,
+            interval: 150,
+          },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = JSON.parse(response.body);
+        expect(body.status).toBe('success');
+      });
     });
 
     describe('Error handling', () => {
@@ -282,6 +321,44 @@ describe('Wake API Integration Tests', () => {
         expect(response.statusCode).toBe(400);
         const body = JSON.parse(response.body);
         expect(body.error.code).toBe('INVALID_NUM_PACKETS');
+      });
+
+      it('should return 400 for invalid interval (too low)', async () => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/wake',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': testApiKey,
+          },
+          payload: {
+            mac: 'AA:BB:CC:DD:EE:FF',
+            interval: 5,
+          },
+        });
+
+        expect(response.statusCode).toBe(400);
+        const body = JSON.parse(response.body);
+        expect(body.error.code).toBe('INVALID_INTERVAL');
+      });
+
+      it('should return 400 for invalid interval (too high)', async () => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/wake',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': testApiKey,
+          },
+          payload: {
+            mac: 'AA:BB:CC:DD:EE:FF',
+            interval: 2000,
+          },
+        });
+
+        expect(response.statusCode).toBe(400);
+        const body = JSON.parse(response.body);
+        expect(body.error.code).toBe('INVALID_INTERVAL');
       });
 
       it('should return 401 without API key', async () => {

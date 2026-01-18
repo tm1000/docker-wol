@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateMacAddress, validatePort, validateIPv4, validateNumPackets } from '../../src/validators/request.js';
+import { validateMacAddress, validatePort, validateIPv4, validateNumPackets, validateInterval } from '../../src/validators/request.js';
 
 describe('MAC Address Validator', () => {
   describe('Valid MAC address formats', () => {
@@ -160,6 +160,38 @@ describe('NumPackets Validator', () => {
     it('should reject non-integer values', () => {
       expect(validateNumPackets(3.5)).toBe(false);
       expect(validateNumPackets(1.1)).toBe(false);
+    });
+  });
+});
+
+describe('Interval Validator', () => {
+  describe('Valid interval values', () => {
+    it('should accept valid intervals in milliseconds', () => {
+      expect(validateInterval(10)).toBe(true);
+      expect(validateInterval(50)).toBe(true);
+      expect(validateInterval(100)).toBe(true);
+      expect(validateInterval(500)).toBe(true);
+      expect(validateInterval(1000)).toBe(true);
+    });
+  });
+
+  describe('Invalid interval values', () => {
+    it('should reject intervals below 10ms', () => {
+      expect(validateInterval(0)).toBe(false);
+      expect(validateInterval(5)).toBe(false);
+      expect(validateInterval(9)).toBe(false);
+      expect(validateInterval(-1)).toBe(false);
+    });
+
+    it('should reject intervals above 1000ms', () => {
+      expect(validateInterval(1001)).toBe(false);
+      expect(validateInterval(2000)).toBe(false);
+      expect(validateInterval(10000)).toBe(false);
+    });
+
+    it('should reject non-integer values', () => {
+      expect(validateInterval(100.5)).toBe(false);
+      expect(validateInterval(50.1)).toBe(false);
     });
   });
 });

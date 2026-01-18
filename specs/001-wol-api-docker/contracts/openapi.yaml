@@ -72,6 +72,7 @@ paths:
                   port: 9
                   interface: "en0"
                   num_packets: 5
+                  interval: 200
       responses:
         '200':
           description: Wake-on-LAN packet sent successfully
@@ -249,6 +250,14 @@ components:
             Number of WoL packets to send.
             Default: 3 (sending multiple packets increases reliability)
           example: 3
+        interval:
+          type: integer
+          minimum: 10
+          maximum: 1000
+          description: |
+            Interval between packets in milliseconds.
+            Default: 100 (100ms delay between each packet)
+          example: 100
       additionalProperties: false
 
     WakeResponse:
@@ -319,6 +328,7 @@ components:
                 - INVALID_PORT
                 - INVALID_ADDRESS
                 - INVALID_NUM_PACKETS
+                - INVALID_INTERVAL
                 - INTERFACE_NOT_FOUND
                 - MISSING_MAC
                 - INVALID_JSON

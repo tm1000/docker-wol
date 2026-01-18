@@ -55,3 +55,10 @@ export function validateIPv4(address: string): boolean {
 export function validateNumPackets(numPackets: number): boolean {
   return Number.isInteger(numPackets) && numPackets >= 1 && numPackets <= 10;
 }
+
+/**
+ * Validate interval between packets in milliseconds (10-1000ms range)
+ */
+export function validateInterval(interval: number): boolean {
+  return Number.isInteger(interval) && interval >= 10 && interval <= 1000;
+}

@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WakeRequest, WakeResponse, ErrorResponse, HealthResponse } from '../types/index.js';
-import { validateMacAddress, validatePort, validateIPv4, validateNumPackets } from '../validators/request.js';
+import { validateMacAddress, validatePort, validateIPv4, validateNumPackets, validateInterval } from '../validators/request.js';
 import { sendWakePacket } from '../services/wol.js';
 
 /**
@@ -13,7 +13,7 @@ export async function registerWakeRoutes(server: FastifyInstance) {
   server.post<{ Body: WakeRequest }>(
     '/wake',
     async (request: FastifyRequest<{ Body: WakeRequest }>, reply: FastifyReply) => {
-      const { mac, address, port, interface: networkInterface, num_packets } = request.body || {};
+      const { mac, address, port, interface: networkInterface, num_packets, interval } = request.body || {};
       const timestamp = new Date().toISOString();
 
       // Validate MAC address
@@ -91,6 +91,21 @@ export async function registerWakeRoutes(server: FastifyInstance) {
         return reply.code(400).send(errorResponse);
       }
 
+      // Validate optional interval
+      if (interval !== undefined && !validateInterval(interval)) {
+        const errorResponse: ErrorResponse = {
+          status: 'error',
+          message: 'Invalid interval',
+          mac,
+          timestamp,
+          error: {
+            code: 'INVALID_INTERVAL',
+            details: 'Interval must be between 10 and 1000 milliseconds',
+          },
+        };
+        return reply.code(400).send(errorResponse);
+      }
+
       // Send Wake-on-LAN packet
       try {
         const wakeRequest: WakeRequest = {
@@ -99,6 +114,7 @@ export async function registerWakeRoutes(server: FastifyInstance) {
           ...(port && { port }),
           ...(networkInterface && { interface: networkInterface }),
           ...(num_packets && { num_packets }),
+          ...(interval && { interval }),
         };
 
         await sendWakePacket(wakeRequest);
@@ -111,6 +127,7 @@ export async function registerWakeRoutes(server: FastifyInstance) {
             port,
             interface: networkInterface,
             num_packets,
+            interval,
             result: 'success',
           },
           'Wake-on-LAN packet sent successfully'
