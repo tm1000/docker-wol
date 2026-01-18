@@ -1,9 +1,11 @@
 # Wake-on-LAN API Container
 
-[![Docker Build](https://img.shields.io/docker/automated/your-username/wake-on-lan-api)](https://hub.docker.com/r/your-username/wake-on-lan-api)
+[![Docker Build](https://img.shields.io/docker/automated/your-username/wake-on-lan-api)](https://hub.docker.com/r/tm99899/wol)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A simple, containerized HTTP API for sending Wake-on-LAN (WoL) magic packets to network devices. Designed for Docker Compose stacks where only this service needs host network access, keeping other containers isolated.
+
+**NOTE** This is 100% "vibe"-coded utilizing claude-sonnet-4.5. I have no qualms about this but needed a way to run [https://www.npmjs.com/package/wake_on_lan](https://www.npmjs.com/package/wake_on_lan) in a docker-compose setup as a standalone container that has a `network_mode` of `host` so that I could use [companion](https://bitfocus.io/companion-pi) in another container without exposing it to the host 
 
 ## Features
 
