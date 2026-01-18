@@ -31,16 +31,43 @@ docker run -d \
 ### Docker Compose
 
 ```yaml
-version: '3.8'
-
 services:
   wol-api:
-    image: your-username/wake-on-lan-api:latest
-    container_name: wol-api
+    image: tm99899/wol:latest
     network_mode: host
     environment:
       - API_KEY=your-secret-api-key
     restart: unless-stopped
+```
+
+### Kubernetes Compose
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wol-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wol-api
+  template:
+    metadata:
+      labels:
+        app: wol-api
+    spec:
+      hostNetwork: true
+      containers:
+        - name: wol-api
+          image: 'tm99899/wol:1.0.0'
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wol-api-secret
+                  key: api-key
+
 ```
 
 ### Send Wake Request
