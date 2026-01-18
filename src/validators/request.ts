@@ -48,3 +48,10 @@ export function validateIPv4(address: string): boolean {
     return num >= 0 && num <= 255;
   });
 }
+
+/**
+ * Validate number of packets (1-10 range)
+ */
+export function validateNumPackets(numPackets: number): boolean {
+  return Number.isInteger(numPackets) && numPackets >= 1 && numPackets <= 10;
+}

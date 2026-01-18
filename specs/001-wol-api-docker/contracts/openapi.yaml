@@ -71,6 +71,7 @@ paths:
                   address: "192.168.50.255"
                   port: 9
                   interface: "en0"
+                  num_packets: 5
       responses:
         '200':
           description: Wake-on-LAN packet sent successfully
@@ -240,6 +241,14 @@ components:
             Specific network interface to use for sending the packet.
             Must be a valid interface name on the host system.
           example: "eth0"
+        num_packets:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: |
+            Number of WoL packets to send.
+            Default: 3 (sending multiple packets increases reliability)
+          example: 3
       additionalProperties: false
 
     WakeResponse:
@@ -309,6 +318,7 @@ components:
                 - INVALID_MAC_FORMAT
                 - INVALID_PORT
                 - INVALID_ADDRESS
+                - INVALID_NUM_PACKETS
                 - INTERFACE_NOT_FOUND
                 - MISSING_MAC
                 - INVALID_JSON

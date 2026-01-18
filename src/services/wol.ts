@@ -11,6 +11,7 @@ export function sendWakePacket(request: WakeRequest): Promise<void> {
       address?: string;
       port?: number;
       interface?: string;
+      num_packets?: number;
     } = {};
 
     if (request.address) {
@@ -23,6 +24,10 @@ export function sendWakePacket(request: WakeRequest): Promise<void> {
 
     if (request.interface) {
       options.interface = request.interface;
+    }
+
+    if (request.num_packets) {
+      options.num_packets = request.num_packets;
     }
 
     // Send WoL packet

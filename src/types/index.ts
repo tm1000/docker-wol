@@ -4,6 +4,7 @@ export interface WakeRequest {
   address?: string;
   port?: number;
   interface?: string;
+  num_packets?: number;
 }
 
 // Wake Response - Success response

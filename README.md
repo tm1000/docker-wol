@@ -80,6 +80,7 @@ Send a Wake-on-LAN magic packet to a network device.
 | `address` | string | No | Custom broadcast address (default: `255.255.255.255`) |
 | `port` | integer | No | Custom UDP port (default: `9`) |
 | `interface` | string | No | Network interface name (e.g., `eth0`, `en0`) |
+| `num_packets` | integer | No | Number of packets to send (1-10, default: `3`) |
 
 **Examples:**
 
@@ -101,6 +102,12 @@ curl -X POST http://localhost:3000/wake \
   -H "Content-Type: application/json" \
   -H "X-API-Key": "your-api-key" \
   -d '{"mac": "AA:BB:CC:DD:EE:FF", "port": 7, "interface": "eth0"}'
+
+# Send multiple packets for reliability
+curl -X POST http://localhost:3000/wake \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{"mac": "AA:BB:CC:DD:EE:FF", "num_packets": 5}'
 ```
 
 ### GET /health

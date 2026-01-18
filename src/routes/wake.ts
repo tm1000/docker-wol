@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WakeRequest, WakeResponse, ErrorResponse, HealthResponse } from '../types/index.js';
-import { validateMacAddress, validatePort, validateIPv4 } from '../validators/request.js';
+import { validateMacAddress, validatePort, validateIPv4, validateNumPackets } from '../validators/request.js';
 import { sendWakePacket } from '../services/wol.js';
 
 /**
@@ -13,7 +13,7 @@ export async function registerWakeRoutes(server: FastifyInstance) {
   server.post<{ Body: WakeRequest }>(
     '/wake',
     async (request: FastifyRequest<{ Body: WakeRequest }>, reply: FastifyReply) => {
-      const { mac, address, port, interface: networkInterface } = request.body || {};
+      const { mac, address, port, interface: networkInterface, num_packets } = request.body || {};
       const timestamp = new Date().toISOString();
 
       // Validate MAC address
@@ -76,6 +76,21 @@ export async function registerWakeRoutes(server: FastifyInstance) {
         return reply.code(400).send(errorResponse);
       }
 
+      // Validate optional num_packets
+      if (num_packets !== undefined && !validateNumPackets(num_packets)) {
+        const errorResponse: ErrorResponse = {
+          status: 'error',
+          message: 'Invalid number of packets',
+          mac,
+          timestamp,
+          error: {
+            code: 'INVALID_NUM_PACKETS',
+            details: 'Number of packets must be between 1 and 10',
+          },
+        };
+        return reply.code(400).send(errorResponse);
+      }
+
       // Send Wake-on-LAN packet
       try {
         const wakeRequest: WakeRequest = {
@@ -83,6 +98,7 @@ export async function registerWakeRoutes(server: FastifyInstance) {
           ...(address && { address }),
           ...(port && { port }),
           ...(networkInterface && { interface: networkInterface }),
+          ...(num_packets && { num_packets }),
         };
 
         await sendWakePacket(wakeRequest);
@@ -94,6 +110,7 @@ export async function registerWakeRoutes(server: FastifyInstance) {
             address,
             port,
             interface: networkInterface,
+            num_packets,
             result: 'success',
           },
           'Wake-on-LAN packet sent successfully'

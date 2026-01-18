@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateMacAddress, validatePort, validateIPv4 } from '../../src/validators/request.js';
+import { validateMacAddress, validatePort, validateIPv4, validateNumPackets } from '../../src/validators/request.js';
 
 describe('MAC Address Validator', () => {
   describe('Valid MAC address formats', () => {
@@ -130,6 +130,36 @@ describe('IPv4 Validator', () => {
     it('should reject invalid separators', () => {
       expect(validateIPv4('192:168:1:1')).toBe(false);
       expect(validateIPv4('192-168-1-1')).toBe(false);
+    });
+  });
+});
+
+describe('NumPackets Validator', () => {
+  describe('Valid num_packets values', () => {
+    it('should accept valid packet counts', () => {
+      expect(validateNumPackets(1)).toBe(true);
+      expect(validateNumPackets(3)).toBe(true);
+      expect(validateNumPackets(5)).toBe(true);
+      expect(validateNumPackets(10)).toBe(true);
+    });
+  });
+
+  describe('Invalid num_packets values', () => {
+    it('should reject 0 and negative numbers', () => {
+      expect(validateNumPackets(0)).toBe(false);
+      expect(validateNumPackets(-1)).toBe(false);
+      expect(validateNumPackets(-10)).toBe(false);
+    });
+
+    it('should reject numbers above 10', () => {
+      expect(validateNumPackets(11)).toBe(false);
+      expect(validateNumPackets(100)).toBe(false);
+      expect(validateNumPackets(1000)).toBe(false);
+    });
+
+    it('should reject non-integer values', () => {
+      expect(validateNumPackets(3.5)).toBe(false);
+      expect(validateNumPackets(1.1)).toBe(false);
     });
   });
 });

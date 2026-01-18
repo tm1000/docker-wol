@@ -142,6 +142,26 @@ describe('Wake API Integration Tests', () => {
             address: '192.168.1.255',
             port: 9,
             interface: 'en0',
+            num_packets: 5,
+          },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = JSON.parse(response.body);
+        expect(body.status).toBe('success');
+      });
+
+      it('should accept custom num_packets', async () => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/wake',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': testApiKey,
+          },
+          payload: {
+            mac: 'AA:BB:CC:DD:EE:FF',
+            num_packets: 1,
           },
         });
 
@@ -224,6 +244,44 @@ describe('Wake API Integration Tests', () => {
         expect(response.statusCode).toBe(400);
         const body = JSON.parse(response.body);
         expect(body.error.code).toBe('INVALID_ADDRESS');
+      });
+
+      it('should return 400 for invalid num_packets (too high)', async () => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/wake',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': testApiKey,
+          },
+          payload: {
+            mac: 'AA:BB:CC:DD:EE:FF',
+            num_packets: 99,
+          },
+        });
+
+        expect(response.statusCode).toBe(400);
+        const body = JSON.parse(response.body);
+        expect(body.error.code).toBe('INVALID_NUM_PACKETS');
+      });
+
+      it('should return 400 for invalid num_packets (zero)', async () => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/wake',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': testApiKey,
+          },
+          payload: {
+            mac: 'AA:BB:CC:DD:EE:FF',
+            num_packets: 0,
+          },
+        });
+
+        expect(response.statusCode).toBe(400);
+        const body = JSON.parse(response.body);
+        expect(body.error.code).toBe('INVALID_NUM_PACKETS');
       });
 
       it('should return 401 without API key', async () => {
