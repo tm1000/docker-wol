@@ -1,0 +1,345 @@
+openapi: 3.1.0
+info:
+  title: Wake-on-LAN API
+  version: 1.0.0
+  description: |
+    A simple HTTP API for sending Wake-on-LAN magic packets to network devices.
+    Designed to run in Docker containers with host network mode, allowing other
+    containers to wake network devices without requiring host network access themselves.
+  contact:
+    name: Docker-WOL Project
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: http://wol-api:3000
+    description: Docker Compose service
+
+tags:
+  - name: wake
+    description: Wake-on-LAN operations
+  - name: health
+    description: Health check operations
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /wake:
+    post:
+      summary: Send Wake-on-LAN packet
+      description: |
+        Sends a Wake-on-LAN magic packet to the specified MAC address.
+        Optionally accepts custom broadcast address, port, and network interface parameters.
+      tags:
+        - wake
+      operationId: sendWakePacket
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WakeRequest'
+            examples:
+              minimal:
+                summary: Minimal request (MAC only)
+                value:
+                  mac: "AA:BB:CC:DD:EE:FF"
+              withAddress:
+                summary: Custom broadcast address
+                value:
+                  mac: "AA-BB-CC-DD-EE-FF"
+                  address: "192.168.1.255"
+              withPort:
+                summary: Custom port
+                value:
+                  mac: "AABBCCDDEEFF"
+                  port: 7
+              withInterface:
+                summary: Specific network interface
+                value:
+                  mac: "AA:BB:CC:DD:EE:FF"
+                  interface: "eth0"
+              full:
+                summary: All options
+                value:
+                  mac: "AA:BB:CC:DD:EE:FF"
+                  address: "192.168.50.255"
+                  port: 9
+                  interface: "en0"
+      responses:
+        '200':
+          description: Wake-on-LAN packet sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WakeResponse'
+              examples:
+                success:
+                  summary: Successful wake request
+                  value:
+                    status: success
+                    message: "Wake-on-LAN packet sent successfully"
+                    mac: "AA:BB:CC:DD:EE:FF"
+                    timestamp: "2026-01-17T10:30:00.000Z"
+        '400':
+          description: Invalid request (malformed MAC, invalid options, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidMac:
+                  summary: Invalid MAC address format
+                  value:
+                    status: error
+                    message: "Invalid MAC address format"
+                    mac: "INVALID"
+                    timestamp: "2026-01-17T10:30:00.000Z"
+                    error:
+                      code: "INVALID_MAC_FORMAT"
+                      details: "MAC address must be in format AA:BB:CC:DD:EE:FF, AA-BB-CC-DD-EE-FF, or AABBCCDDEEFF"
+                invalidPort:
+                  summary: Invalid port number
+                  value:
+                    status: error
+                    message: "Invalid port number"
+                    mac: "AA:BB:CC:DD:EE:FF"
+                    timestamp: "2026-01-17T10:30:00.000Z"
+                    error:
+                      code: "INVALID_PORT"
+                      details: "Port must be between 1 and 65535"
+                interfaceNotFound:
+                  summary: Network interface not found
+                  value:
+                    status: error
+                    message: "Network interface not found"
+                    mac: "AA:BB:CC:DD:EE:FF"
+                    timestamp: "2026-01-17T10:30:00.000Z"
+                    error:
+                      code: "INTERFACE_NOT_FOUND"
+                      details: "Network interface 'eth99' does not exist on this host"
+                missingMac:
+                  summary: MAC address missing
+                  value:
+                    status: error
+                    message: "MAC address is required"
+                    mac: ""
+                    timestamp: "2026-01-17T10:30:00.000Z"
+                    error:
+                      code: "MISSING_MAC"
+                      details: "The 'mac' field is required in the request body"
+        '401':
+          description: Unauthorized - Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  summary: Invalid or missing API key
+                  value:
+                    status: error
+                    message: "Unauthorized"
+                    mac: ""
+                    timestamp: "2026-01-17T10:30:00.000Z"
+                    error:
+                      code: "UNAUTHORIZED"
+                      details: "Missing or invalid X-API-Key header"
+        '500':
+          description: Internal server error (WoL packet send failed, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                wolFailed:
+                  summary: Failed to send WoL packet
+                  value:
+                    status: error
+                    message: "Failed to send Wake-on-LAN packet"
+                    mac: "AA:BB:CC:DD:EE:FF"
+                    timestamp: "2026-01-17T10:30:00.000Z"
+                    error:
+                      code: "WOL_SEND_FAILED"
+                      details: "Network error: No route to host"
+
+  /health:
+    get:
+      summary: Health check endpoint
+      description: |
+        Returns the health status of the API service. Used by Docker and Kubernetes
+        for health checks, liveness probes, and readiness probes.
+      tags:
+        - health
+      operationId: getHealth
+      security: []  # No authentication required for health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  summary: Healthy service
+                  value:
+                    status: "healthy"
+                    uptime: 12345
+                    timestamp: "2026-01-17T10:30:00.000Z"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key for authentication. Must be provided in the X-API-Key header
+        for all /wake requests. Configure via the API_KEY environment variable.
+
+  schemas:
+    WakeRequest:
+      type: object
+      required:
+        - mac
+      properties:
+        mac:
+          type: string
+          description: |
+            Target device MAC address. Supports three formats:
+            - Colon-separated: AA:BB:CC:DD:EE:FF
+            - Hyphen-separated: AA-BB-CC-DD-EE-FF
+            - Continuous: AABBCCDDEEFF
+          pattern: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$|^[0-9A-Fa-f]{12}$'
+          example: "AA:BB:CC:DD:EE:FF"
+        address:
+          type: string
+          format: ipv4
+          description: |
+            Custom broadcast address for the WoL packet.
+            Default: 255.255.255.255
+          example: "192.168.1.255"
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          description: |
+            Custom UDP port for the WoL packet.
+            Default: 9 (standard WoL port)
+          example: 9
+        interface:
+          type: string
+          minLength: 1
+          description: |
+            Specific network interface to use for sending the packet.
+            Must be a valid interface name on the host system.
+          example: "eth0"
+      additionalProperties: false
+
+    WakeResponse:
+      type: object
+      required:
+        - status
+        - message
+        - mac
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+          description: Status of the wake request
+          example: "success"
+        message:
+          type: string
+          description: Human-readable result message
+          example: "Wake-on-LAN packet sent successfully"
+        mac:
+          type: string
+          description: MAC address from the request (echoed back)
+          example: "AA:BB:CC:DD:EE:FF"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when the request was processed
+          example: "2026-01-17T10:30:00.000Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+        - mac
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - error
+          description: Status of the wake request
+          example: "error"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid MAC address format"
+        mac:
+          type: string
+          description: MAC address from the request (if available)
+          example: "INVALID"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when the error occurred
+          example: "2026-01-17T10:30:00.000Z"
+        error:
+          type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              enum:
+                - INVALID_MAC_FORMAT
+                - INVALID_PORT
+                - INVALID_ADDRESS
+                - INTERFACE_NOT_FOUND
+                - MISSING_MAC
+                - INVALID_JSON
+                - UNAUTHORIZED
+                - WOL_SEND_FAILED
+                - INTERNAL_ERROR
+              example: "INVALID_MAC_FORMAT"
+            details:
+              type: string
+              description: Additional error details for debugging
+              example: "MAC address must be in format AA:BB:CC:DD:EE:FF, AA-BB-CC-DD-EE-FF, or AABBCCDDEEFF"
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - uptime
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+          description: Health status of the service
+          example: "healthy"
+        uptime:
+          type: number
+          description: Process uptime in seconds
+          example: 12345
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of the health check
+          example: "2026-01-17T10:30:00.000Z"

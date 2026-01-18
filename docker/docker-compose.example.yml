@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Wake-on-LAN API (requires host network mode)
+  wol-api:
+    image: wake-on-lan-api:latest
+    container_name: wol-api
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      # REQUIRED: API key for authentication (minimum 8 characters recommended)
+      - API_KEY=${API_KEY:-your-secret-api-key-here}
+      # OPTIONAL: HTTP server port (default: 3000)
+      - PORT=${PORT:-3000}
+      # OPTIONAL: Log level: trace, debug, info, warn, error, fatal (default: info)
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      # OPTIONAL: Environment identifier (default: production)
+      - NODE_ENV=${NODE_ENV:-production}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # Example: Service in same Docker host that needs WoL capabilities
+  # Other services on the same Docker host can reach the API via the host's IP address
+  # NOTE: This example demonstrates that the WoL API runs in host mode and is accessible
+  # from the Docker host. Other containerized applications would access it via:
+  # - http://host.docker.internal:3000 (Docker Desktop on Mac/Windows)
+  # - http://172.17.0.1:3000 (Linux Docker default bridge gateway)
+  # - http://<HOST_IP>:3000 (explicit host IP)
+  test-client:
+    image: alpine:latest
+    container_name: wol-client-example
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        apk add --no-cache curl &&
+        echo '=== Wake-on-LAN API Client Example ===' &&
+        echo 'The WoL API runs with host networking and is accessible at:' &&
+        echo '  - Mac/Windows: http://host.docker.internal:3000' &&
+        echo '  - Linux: http://172.17.0.1:3000' &&
+        echo '' &&
+        echo 'Example usage from this container on Mac/Windows:' &&
+        echo 'curl -X POST http://host.docker.internal:3000/wake \\' &&
+        echo '  -H \"Content-Type: application/json\" \\' &&
+        echo '  -H \"X-API-Key: your-secret-api-key-here\" \\' &&
+        echo '  -d '\\''{\"}\"mac\"}\":\"}\"AA:BB:CC:DD:EE:FF\"}\"}'\\''' &&
+        echo '' &&
+        echo 'Container will sleep to keep example running...' &&
+        tail -f /dev/null
+      "
+    depends_on:
+      wol-api:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge
